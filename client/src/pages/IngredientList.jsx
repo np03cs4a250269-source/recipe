@@ -5,7 +5,7 @@ import axios from "axios";
 function IngredientList() {
   const [ingredients, setIngredients] = useState([]);
 
-  useEffect(() => {
+  const fetchIngredients = () => {
     const token = localStorage.getItem("token");
     axios
       .get("http://localhost:5050/ingredients", {
@@ -13,7 +13,24 @@ function IngredientList() {
       })
       .then((res) => setIngredients(res.data))
       .catch((err) => console.log(err));
+  };
+
+  useEffect(() => {
+    fetchIngredients();
   }, []);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this ingredient?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(`http://localhost:5050/ingredients/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchIngredients();
+    } catch (err) {
+      alert("Failed to delete ingredient");
+    }
+  };
 
   return (
     <div className="page-container">
@@ -39,10 +56,16 @@ function IngredientList() {
               <td>{ing.id}</td>
               <td>{ing.name}</td>
               <td>{ing.unit}</td>
-              <td>
+              <td style={{ display: "flex", gap: "10px" }}>
                 <Link to={`/ingredients/edit/${ing.id}`} className="btn-edit">
                   Edit
                 </Link>
+                <button
+                  onClick={() => handleDelete(ing.id)}
+                  style={{ width: "auto", padding: "5px 15px", margin: 0 }}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

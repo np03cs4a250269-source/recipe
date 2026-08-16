@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 function AddEditRecipe() {
@@ -12,6 +12,8 @@ function AddEditRecipe() {
   const [allIngredients, setAllIngredients] = useState([]);
   const [selectedIngredients, setSelectedIngredients] = useState([]);
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEdit = Boolean(id);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -21,7 +23,29 @@ function AddEditRecipe() {
       })
       .then((res) => setAllIngredients(res.data))
       .catch((err) => console.log(err));
-  }, []);
+
+    if (isEdit) {
+      axios
+        .get(`http://localhost:5050/recipes/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          const r = res.data;
+          setName(r.name);
+          setDescription(r.description);
+          setInstructions(r.instructions);
+          setCategory(r.category);
+          setDifficulty(r.difficulty);
+          setSelectedIngredients(
+            r.ingredients.map((ing) => ({
+              ingredient_id:
+                allIngredients.find((a) => a.name === ing.name)?.id || "",
+              quantity: ing.quantity,
+            })),
+          );
+        });
+    }
+  }, [id, isEdit]);
 
   const addIngredientRow = () => {
     setSelectedIngredients([
@@ -63,12 +87,21 @@ function AddEditRecipe() {
 
     const token = localStorage.getItem("token");
     try {
-      await axios.post("http://localhost:5050/recipes", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      if (isEdit) {
+        await axios.put(`http://localhost:5050/recipes/${id}`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } else {
+        await axios.post("http://localhost:5050/recipes", formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      }
       alert("Recipe saved!");
       navigate("/recipes");
     } catch (err) {
@@ -81,7 +114,7 @@ function AddEditRecipe() {
       <Link to="/recipes" className="back-btn">
         ← Back to Recipes
       </Link>
-      <h1>Add New Recipe</h1>
+      <h1>{isEdit ? "Edit Recipe" : "Add New Recipe"}</h1>
 
       <form onSubmit={handleSubmit} className="form-container">
         <div className="form-group">
@@ -185,7 +218,9 @@ function AddEditRecipe() {
         </div>
 
         <div className="form-group">
-          <label>Recipe Image</label>
+          <label>
+            Recipe Image {isEdit && "(leave empty to keep current image)"}
+          </label>
           <input
             type="file"
             accept="image/*"

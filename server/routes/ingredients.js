@@ -1,6 +1,7 @@
 import express from "express";
 import db from "../db.js";
 import verifyToken from "../middleware/auth.js";
+import verifyAdmin from "../middleware/admin.js";
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get("/ingredients", verifyToken, (req, res) => {
 });
 
 // ADD ingredient
-router.post("/ingredients", verifyToken, (req, res) => {
+router.post("/ingredients", verifyToken, verifyAdmin, (req, res) => {
   const { name, unit } = req.body;
   if (!name || !unit) {
     return res.status(400).json({ message: "Name and unit are required" });
@@ -31,7 +32,7 @@ router.post("/ingredients", verifyToken, (req, res) => {
 });
 
 // EDIT ingredient
-router.put("/ingredients/:id", verifyToken, (req, res) => {
+router.put("/ingredients/:id", verifyToken, verifyAdmin, (req, res) => {
   const { name, unit } = req.body;
   if (!name || !unit) {
     return res.status(400).json({ message: "Name and unit are required" });
@@ -48,7 +49,7 @@ router.put("/ingredients/:id", verifyToken, (req, res) => {
 });
 
 // DELETE ingredient
-router.delete("/ingredients/:id", verifyToken, (req, res) => {
+router.delete("/ingredients/:id", verifyToken, verifyAdmin, (req, res) => {
   db.query("DELETE FROM ingredients WHERE id = ?", [req.params.id], (err) => {
     if (err)
       return res.status(500).json({ message: "Error deleting ingredient" });

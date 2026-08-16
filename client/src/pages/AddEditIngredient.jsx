@@ -1,11 +1,30 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 function AddEditIngredient() {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("");
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEdit = Boolean(id);
+
+  useEffect(() => {
+    if (isEdit) {
+      const token = localStorage.getItem("token");
+      axios
+        .get("http://localhost:5050/ingredients", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          const found = res.data.find((i) => i.id === Number(id));
+          if (found) {
+            setName(found.name);
+            setUnit(found.unit);
+          }
+        });
+    }
+  }, [id, isEdit]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,11 +34,19 @@ function AddEditIngredient() {
     }
     const token = localStorage.getItem("token");
     try {
-      await axios.post(
-        "http://localhost:5050/ingredients",
-        { name, unit },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      if (isEdit) {
+        await axios.put(
+          `http://localhost:5050/ingredients/${id}`,
+          { name, unit },
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+      } else {
+        await axios.post(
+          "http://localhost:5050/ingredients",
+          { name, unit },
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+      }
       alert("Ingredient saved!");
       navigate("/ingredients");
     } catch (err) {
@@ -32,7 +59,7 @@ function AddEditIngredient() {
       <Link to="/ingredients" className="back-btn">
         ← Back to Ingredients
       </Link>
-      <h1>Add/Edit Ingredient</h1>
+      <h1>{isEdit ? "Edit Ingredient" : "Add Ingredient"}</h1>
 
       <form onSubmit={handleSubmit} className="form-container">
         <div className="form-group">
